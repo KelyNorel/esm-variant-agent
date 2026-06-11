@@ -74,20 +74,28 @@ domain composition, overall sequence plausibility — but not the local effect o
 substitution. This motivates the LLR approach in notebook 02, which asks the model 
 directly about each position rather than comparing global representations.
 
-### Notebook 02 — Log-Likelihood Ratio Scoring *(in progress)*
+### Notebook 02 — Log-Likelihood Ratio Scoring 
+
 
 **Approach:** For each mutation X→Y at position i, compute:
-
+For each mutation X→Y at position i, ESM2 masks that position and computes:
 ```
 LLR(i, Y) = log P(Y | context) − log P(X | context)
 ```
 
-where context is the surrounding sequence with position i masked. A strongly negative 
-LLR means the model finds the mutant amino acid implausible given the evolutionary 
-context — the classic zero-shot variant effect prediction signal.
+A negative LLR means the mutant amino acid is less probable than wildtype given 
+the surrounding sequence context — the standard zero-shot variant effect signal.
 
-**Expected result:** Spearman ρ ≈ 0.40–0.50 against experimental DMS scores, 
-consistent with published ESM2 benchmarks on ProteinGym.
+![LLR scoring](reports/fig02_llr_scoring.png)
+
+| Method | Spearman ρ | p-value |
+|--------|-----------|---------|
+| Cosine distance (notebook 01) | -0.070 | 0.49 |
+| Log-likelihood ratio | **0.364** | 2.0e-04 |
+
+LLR is a 5x stronger signal than cosine distance. The 8M parameter model trades 
+~30% performance vs ESM2-650M (ρ ≈ 0.52) for ~80x faster inference — practical 
+for the agentic pipeline.
 
 ---
 
@@ -185,4 +193,4 @@ esm-variant-agent/
 
 **Author:** Raquel (Kely) Norel, PhD  
 **Domain:** Computational Biology / Protein Language Models / Agentic AI  
-**Status:** 🔄 In progress — Notebook 01 complete
+**Status:** 🔄 In progress — Notebooks 01 and 02 complete
