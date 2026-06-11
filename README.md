@@ -109,6 +109,7 @@ for the agentic pipeline.
 | Protein of interest | BLAT_ECOLX (beta-lactamase) | Well-characterized, clinically relevant (antibiotic resistance), 4,996 variants |
 | Agent framework | LangGraph | Explicit state management; each node's output tracked and passed forward |
 | Sequence truncation | 1022 aa max (ESM2 limit) | Documented limitation; affects ~5% of human proteome |
+| Code style | Class for ESMRunner | Model loads once in `__init__`, reused across agent calls — avoids 2s reload per mutation |
 
 ---
 
