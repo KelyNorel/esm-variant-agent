@@ -10,6 +10,7 @@ import streamlit as st
 from pathlib import Path
 import pandas as pd
 from src.agent import run_agent
+from src.literature import MAX_MUTATIONS, fetch_clinical_evidence
 
 # --- Page config -------------------------------------------------------------
 
@@ -36,9 +37,8 @@ st.markdown("""
 st.title("🧬 ESM2 Variant Effect Agent")
 st.caption("Zero-shot protein variant scoring with ESM2 + LangGraph + Claude")
 
+# --- Sidebar -----------------------------------------------------------------
 
-
-# --- Sidebar: load example data ----------------------------------------------
 with st.sidebar:
     st.header("Search Available Proteins")
     search_term = st.text_input("Search by gene name", placeholder="e.g. BRCA, TP53, PTEN")
@@ -85,6 +85,7 @@ with st.sidebar:
                 st.session_state['gene_name'] = gene
                 st.session_state['wildtype_sequence'] = wt_sequence
                 st.session_state['mutations_text'] = '\n'.join(sample_mutations)
+                st.session_state['dataset_name'] = filename.replace('.csv', '')
                 st.rerun()
             else:
                 st.error(f"{filename} not found.")
@@ -92,7 +93,7 @@ with st.sidebar:
     st.divider()
     st.markdown("**Model:** `facebook/esm2_t6_8M_UR50D`")
     st.markdown("**Benchmark:** Spearman ρ = 0.364 on ProteinGym")
-    st.markdown("**Device:** MPS (Apple Silicon)")   
+    st.markdown("**Device:** MPS (Apple Silicon)")
 
 # --- Main form ---------------------------------------------------------------
 
@@ -104,7 +105,6 @@ with col1:
         value=st.session_state.get('gene_name', ''),
         placeholder="e.g. BRCA1, TP53, BLAT",
     )
-
     wildtype_sequence = st.text_area(
         "Wildtype protein sequence",
         value=st.session_state.get('wildtype_sequence', ''),
@@ -119,7 +119,6 @@ with col2:
         placeholder="A24G\nR56W\nF70E",
         height=150,
     )
-
     st.markdown("**Format:** `X123Y` = wildtype AA + position + mutant AA")
     st.markdown("Example: `F70E` = Phe→Glu at position 70")
 
@@ -128,7 +127,6 @@ with col2:
 run_button = st.button("Run Variant Effect Analysis", type="primary", use_container_width=True)
 
 if run_button:
-    # Validate inputs
     if not gene_name:
         st.error("Please enter a gene name.")
         st.stop()
@@ -145,22 +143,72 @@ if run_button:
         st.error("No valid mutations found.")
         st.stop()
 
-    # Run agent with progress indicators
     with st.spinner("Running ESM2 variant effect analysis..."):
         try:
-            report = run_agent(gene_name, wildtype_sequence, mutations,dataset_name=st.session_state.get('dataset_name', ''))
+            result = run_agent(gene_name, wildtype_sequence, mutations,
+                               dataset_name=st.session_state.get('dataset_name', ''))
+            st.session_state['report'] = result["report"]
+            st.session_state['scored_mutations'] = result["scored_mutations"]
         except Exception as e:
             st.error(f"Agent error: {str(e)}")
             st.stop()
 
-    # Display report
+# --- Display report — always from session_state ------------------------------
+
+report = st.session_state.get('report', '')
+
+if report:
     st.divider()
     st.markdown(report)
-
-    # Download button
     st.download_button(
         label="Download Report",
         data=report,
         file_name=f"variant_report_{gene_name}.md",
         mime="text/markdown",
     )
+
+    # --- Clinical Evidence ---------------------------------------------------
+
+    st.divider()
+    st.subheader("🔬 Clinical Evidence Search")
+    st.caption("Search ClinVar, PubMed, and UniProt for selected mutations.")
+
+    highly_del = [
+        m['mutant'] for m in st.session_state.get('scored_mutations', [])
+        if m['llr'] < -2.0
+    ][:MAX_MUTATIONS]
+
+    st.markdown(f"Highly deleterious mutations pre-selected (LLR < −2.0). **Max {MAX_MUTATIONS}.**")
+
+    evidence_mutations = st.text_area(
+        "Mutations to investigate (one per line, max 5):",
+        value='\n'.join(highly_del),
+        height=120,
+        key="evidence_mutations"
+    )
+
+    if st.button("Fetch Clinical Evidence", key="fetch_evidence"):
+        mutations_to_check = [m.strip() for m in evidence_mutations.strip().split('\n') if m.strip()]
+
+        if len(mutations_to_check) == 0:
+            st.warning("No mutations entered.")
+        elif len(mutations_to_check) > MAX_MUTATIONS:
+            st.warning(f"Maximum {MAX_MUTATIONS} mutations allowed. Using first {MAX_MUTATIONS}.")
+            mutations_to_check = mutations_to_check[:MAX_MUTATIONS]
+
+        with st.spinner(f"Searching literature for {len(mutations_to_check)} mutations..."):
+            evidence = fetch_clinical_evidence(gene_name, mutations_to_check)
+
+        st.session_state['evidence'] = evidence
+
+    # Display evidence — always from session_state
+    evidence = st.session_state.get('evidence', '')
+    if evidence:
+        st.markdown(evidence)
+        st.download_button(
+            label="Download Clinical Evidence",
+            data=evidence,
+            file_name=f"clinical_evidence_{gene_name}.md",
+            mime="text/markdown",
+            key="download_evidence"
+        )

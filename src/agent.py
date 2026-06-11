@@ -164,7 +164,10 @@ def run_agent(gene_name: str, wildtype_sequence: str, mutations: list[str], data
     }
 
     result = graph.invoke(initial_state)
-    return result["report"]
+    return {
+        "report": result["report"],
+        "scored_mutations": result["scored_mutations"],
+    }
 
 
 if __name__ == "__main__":
