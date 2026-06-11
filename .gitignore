@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# Entorno
+.env
+venv/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Data y modelos (ndon;t go to repo)
+data/*.csv
+data/*.tsv
+data/*.fasta
+*.pt
+*.bin
+*.safetensors
+
+# HuggingFace cache
+~/.cache/huggingface/
+
+# Reports made
+reports/*.md
+reports/*.pdf
+reports/*.txt
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+#Misc
+go_venv.txt
+
