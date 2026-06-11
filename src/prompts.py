@@ -31,7 +31,8 @@ Always end with a structured markdown report using this exact template:
 
 **Protein:** {protein_name}  
 **Gene:** {gene_name}  
-**UniProt:** {accession}  
+**UniProt:** {accession}
+**Dataset:** {dataset_name}
 
 ### Functional Context
 {2-3 sentences summarizing protein function and clinical relevance}
@@ -64,6 +65,7 @@ REPORT_TEMPLATE = """
 **Protein:** {protein_name}
 **Gene:** {gene_name}
 **UniProt:** {accession}
+**Dataset:** {dataset_name}
 
 ### Functional Context
 {functional_context}

@@ -16,7 +16,8 @@ from langgraph.prebuilt import ToolNode
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
 from dotenv import load_dotenv
-import os
+import os, re
+import time
 
 from src.tools import score_variants, fetch_uniprot, summarize_results
 from src.prompts import AGENT_SYSTEM_PROMPT
@@ -35,6 +36,7 @@ class AgentState(TypedDict):
     uniprot_info: dict
     scored_mutations: list[dict]
     report: str
+    dataset_name: str
 
 
 
@@ -67,7 +69,7 @@ def report_node(state: AgentState) -> AgentState:
     Passes scoring results and UniProt context to Claude for interpretation.
     Includes retry logic for API overload (529 errors).
     """
-    import time
+
     from anthropic import OverloadedError
 
     context = summarize_results.invoke({
@@ -88,6 +90,7 @@ Generate a variant effect report based on the following ESM2 scoring results:
 {context}
 
 Gene: {state['gene_name']}
+Dataset: {state['dataset_name']}
 Mutations analyzed: {', '.join(state['mutations'][:10])}{'...' if len(state['mutations']) > 10 else ''}
 """)
     ]
@@ -96,7 +99,15 @@ Mutations analyzed: {', '.join(state['mutations'][:10])}{'...' if len(state['mut
     for attempt in range(3):
         try:
             response = llm.invoke(messages)
-            return {"report": response.content, "messages": [response]}
+            # Strip any tool call XML that Haiku may include in text output
+            report_text = response.content
+            if isinstance(report_text, list):
+                # Extract only text blocks
+                report_text = ' '.join(block['text'] for block in report_text if block.get('type') == 'text')
+
+            # Remove XML function call blocks if present
+            report_text = re.sub(r'<function_calls>.*?</function_calls>', '', report_text, flags=re.DOTALL).strip()
+            return {"report": report_text, "messages": [response]}
         except OverloadedError:
             wait = 10 * (attempt + 1)
             print(f"API overloaded, retrying in {wait}s... (attempt {attempt + 1}/3)")
@@ -127,7 +138,7 @@ def build_graph() -> StateGraph:
 
 # --- Run ---------------------------------------------------------------------
 
-def run_agent(gene_name: str, wildtype_sequence: str, mutations: list[str]) -> str:
+def run_agent(gene_name: str, wildtype_sequence: str, mutations: list[str], dataset_name: str = "") -> str:
     """
     Run the variant effect agent.
 
@@ -149,6 +160,7 @@ def run_agent(gene_name: str, wildtype_sequence: str, mutations: list[str]) -> s
         "uniprot_info": {},
         "scored_mutations": [],
         "report": "",
+        "dataset_name": dataset_name,
     }
 
     result = graph.invoke(initial_state)
