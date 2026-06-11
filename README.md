@@ -113,6 +113,10 @@ for the agentic pipeline.
 *Structured report with ESM2 scores, UniProt annotation, and biological interpretation*
 ![Report](docs/screenshots/screenshot_03_report.png)
 
+### Clinical Evidence Search
+*Web search across ClinVar, PubMed, and UniProt for highly deleterious variants*
+![Clinical evidence](docs/screenshots/screenshot_04_clinical_evidence.png)
+
 ---
 
 ## Key Design Decisions
@@ -169,10 +173,11 @@ echo "ANTHROPIC_API_KEY=your_key_here" > .env
 - **HuggingFace Transformers** — model loading and inference
 - **LangGraph** — agent workflow orchestration
 - **Claude (Anthropic)** — reasoning engine for result interpretation and report generation
+- **Anthropic Web Search** — real-time literature search for clinical variant evidence (ClinVar, PubMed, UniProt)
 - **PyTorch + MPS** — GPU-accelerated inference on Apple Silicon
 - **ProteinGym** — experimental benchmark for evaluation
 - **pandas, scipy, matplotlib, seaborn** — data processing and visualization
-- **Streamlit** — interactive UI *(coming soon)*
+- **Streamlit** — interactive UI 
 - **Python 3.11**
 
 ---
@@ -210,4 +215,4 @@ esm-variant-agent/
 
 **Author:** Raquel (Kely) Norel, PhD  
 **Domain:** Computational Biology / Protein Language Models / Agentic AI  
-**Status:** 🔄 In progress — Notebooks 01 and 02 complete
+**Status:** ✅ Complete
