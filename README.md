@@ -99,6 +99,22 @@ for the agentic pipeline.
 
 ---
 
+## Screenshots
+
+### Protein Search
+*Search across all available ProteinGym datasets by gene name*
+![Sidebar search](docs/screenshots/screenshot_01_sidebar_search.png)
+
+### Input Form
+*Load example data or enter any wildtype sequence and mutations manually*
+![UI form](docs/screenshots/screenshot_02_ui_form.png)
+
+### Variant Effect Report
+*Structured report with ESM2 scores, UniProt annotation, and biological interpretation*
+![Report](docs/screenshots/screenshot_03_report.png)
+
+---
+
 ## Key Design Decisions
 
 | Decision | Choice | Rationale |
